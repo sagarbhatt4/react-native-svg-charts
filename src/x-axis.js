@@ -94,9 +94,9 @@ class XAxis extends PureComponent {
                     onLayout={ event => this._onLayout(event) }
                 >
                     {/*invisible text to allow for parent resizing*/}
-                    <Text style={{ opacity: 0, fontSize: svg.fontSize }}>
+                    {/* <Text style={{ opacity: 0, fontSize: svg.fontSize }}>
                         {formatLabel(ticks[0], 0)}
-                    </Text>
+                    </Text> */}
                     {
                         height > 0 && width > 0 &&
                         <Svg style={{
