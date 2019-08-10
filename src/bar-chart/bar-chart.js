@@ -3,7 +3,7 @@ import * as scale from 'd3-scale'
 import * as shape from 'd3-shape'
 import PropTypes from 'prop-types'
 import React, { PureComponent } from 'react'
-import { View } from 'react-native'
+import { View, PanResponder } from 'react-native'
 import Svg from 'react-native-svg'
 import Path from '../animated-path'
 
@@ -14,6 +14,61 @@ class BarChart extends PureComponent {
         height: 0,
     }
 
+    componentWillMount() {
+        this._panResponder = PanResponder.create({
+            onMoveShouldSetPanResponder: (evt, gestureState) => true,
+            onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
+            onPanResponderGrant: () => {
+                console.log('-------onPanResponderGrant------')
+            },
+            onPanResponderMove: (evt, gs) => {
+                
+                // let count = this.props.data.length - 1
+                // let inset = this.props.contentInset.left
+                // let index = Math.round((evt.nativeEvent.locationX - inset)/(this.state.width - inset)*count)
+
+                // let val = this.props.data[index].value
+                // let xPos = this.x(index)
+                // let yPos = this.y(val)
+
+                // alert('[MOVE] : xValue ==== ' + xPos + ' && yValue ==== ' + yPos);
+            },
+            onPanResponderTerminationRequest: (evt, gestureState) => true,
+            onPanResponderRelease: (evt, gs) => {
+                
+                let count = this.props.data.length
+                let inset = this.props.contentInset.left
+                let index = Math.round((evt.nativeEvent.locationX - inset)/(this.state.width - inset)*count)
+
+                if(index >= 0 && index < this.props.data.length) {
+                    let val = this.props.data[index].value
+                    let xPos = this.x(index);
+                    let yPos = this.y(val)
+                    let area = this.areas[index]
+                    const { path } = area
+                    let separatedStrs = path.split(",")
+                    let startPos = parseFloat(separatedStrs[0].replace('M', ''))
+                    let endPos = parseFloat(separatedStrs[1].split("L")[1])
+    
+                   // if(evt.nativeEvent.locationX >= startPos && evt.nativeEvent.locationX <= endPos && parseInt(val) > 0) {
+                        // alert('[MOVE] : evt.nativeEvent.locationX ==== ' + evt.nativeEvent.locationX + ' && yValue ==== ' + yPos + ' && index === ' + index + ' && this.bandwidth === ' + this.bandwidth + ' && startPos === ' + startPos + ' && endPos === ' + endPos);
+                        
+                        if(parseInt(val) > 0){
+                            this.props.data[index].svg.onPress();
+                        }
+                        
+                    //}
+                }
+            },
+            onShouldBlockNativeResponder: (evt, gestureState) => {
+              // Returns whether this component should block native components from becoming
+              // the JS responder. Returns true by default. Is currently only supported on
+              // android.
+              return true;
+            }
+          })
+    }
+    
     _onLayout(event) {
         const { nativeEvent: { layout: { height, width } } } = event
         this.setState({ height, width })
@@ -154,7 +209,12 @@ class BarChart extends PureComponent {
         const x = this.calcXScale(xDomain)
         const y = this.calcYScale(yDomain)
 
+        this.x = x
+        this.y = y
+
         const bandwidth = horizontal ? y.bandwidth() : x.bandwidth()
+
+        this.bandwidth = bandwidth
 
         const areas = this.calcAreas(x, y)
             .filter(area => (
@@ -162,6 +222,8 @@ class BarChart extends PureComponent {
             area.bar !== undefined &&
             area.path !== null
             ))
+        
+        this.areas = areas
 
         const extraProps = {
             x,
@@ -181,7 +243,7 @@ class BarChart extends PureComponent {
                 >
                     {
                         height > 0 && width > 0 &&
-                        <Svg style={{ height, width }}>
+                        <Svg style={{ height, width }} {...this._panResponder.panHandlers}>
                             {
                                 React.Children.map(children, child => {
                                     if(child && child.props.belowChart) {
